@@ -15,6 +15,10 @@ export async function registerSwagger(app: FastifyInstance) {
       servers: [{ url: "http://localhost:3000", description: "local" }],
       tags: [
         { name: "chat", description: "Conversa com o agente LangGraph" },
+        {
+          name: "sessions",
+          description: "Gestão de sessões (thread = userId:sessionId no checkpointer)",
+        },
         { name: "orders", description: "Consultas e cancelamento determinísticos" },
         { name: "health", description: "Healthcheck" },
       ],

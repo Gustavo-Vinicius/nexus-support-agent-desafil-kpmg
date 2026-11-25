@@ -88,11 +88,7 @@ export class MockSupportChatModel extends BaseChatModel {
       return toolCall("search_knowledge", { query: text });
     }
 
-    if (/(atrasad|o que posso fazer|previs[aã]o de entrega)/i.test(lower)) {
-      return toolCall("search_knowledge", { query: text });
-    }
-
-    // Continuidade: "previsão de entrega dele" / "status dele"
+    // Continuidade: com orderId na sessão, follow-up de previsão/status consulta o pedido
     if (
       orderId &&
       /(previs[aã]o|entrega|status|atrasad|dele|desse pedido|do pedido)/i.test(lower)
@@ -102,6 +98,10 @@ export class MockSupportChatModel extends BaseChatModel {
 
     if (orderId) {
       return toolCall("get_order", { orderId });
+    }
+
+    if (/(atrasad|o que posso fazer|previs[aã]o de entrega)/i.test(lower)) {
+      return toolCall("search_knowledge", { query: text });
     }
 
     return new AIMessage(

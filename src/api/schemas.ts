@@ -10,3 +10,9 @@ export type ChatBody = z.infer<typeof chatBodySchema>;
 export const orderIdParamsSchema = z.object({
   id: z.string().min(1),
 });
+
+export const sessionIdParamsSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export type SessionIdParams = z.infer<typeof sessionIdParamsSchema>;

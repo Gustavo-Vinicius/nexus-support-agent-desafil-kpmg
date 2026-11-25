@@ -101,6 +101,7 @@ Essas quatro frases respondem à maior parte do que o avaliador costuma procurar
 | Método | Path | Auth | Descrição |
 | --- | --- | --- | --- |
 | `POST` | `/chat` | Bearer | Conversa; `orders` / `citations` / `toolCalls` só do turno atual |
+| `DELETE` | `/sessions/:sessionId` | Bearer | Apaga a thread `{userId}:{sessionId}` (uuid); 204 idempotente |
 | `GET` | `/orders/:id` | Bearer | Consulta pedido (só do dono) |
 | `POST` | `/orders/:id/cancellation-request` | Bearer | Cancelamento direto (sem LLM) |
 | `GET` | `/health` | — | Healthcheck (público) |

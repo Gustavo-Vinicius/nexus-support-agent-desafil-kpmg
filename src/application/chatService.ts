@@ -37,6 +37,15 @@ export interface ChatResult {
 export class ChatService {
   constructor(private readonly deps: AgentDeps) {}
 
+  /**
+   * Apaga só a thread `{userId}:{sessionId}` do checkpointer (mensagens + interrupt
+   * de cancelamento pendente). Idempotente: sessão inexistente também ok.
+   */
+  async deleteSession(userId: string, sessionId: string): Promise<void> {
+    const threadId = `${userId}:${sessionId}`;
+    await this.deps.checkpointer.deleteThread(threadId);
+  }
+
   async handle(input: ChatInput): Promise<ChatResult> {
     const threadId = `${input.userId}:${input.sessionId}`;
     const config = { configurable: { thread_id: threadId } };
