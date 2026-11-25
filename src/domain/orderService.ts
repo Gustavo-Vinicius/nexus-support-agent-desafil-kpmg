@@ -19,4 +19,9 @@ export class OrderService {
     }
     return order;
   }
+
+  /** Lista só os pedidos do customer autenticado (nunca o catálogo global). */
+  listMyOrders(customerId: string): Order[] {
+    return this.orders.listByCustomer(customerId);
+  }
 }

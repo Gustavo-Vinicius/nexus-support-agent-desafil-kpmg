@@ -6,6 +6,7 @@ import type { KnowledgeService } from "../domain/knowledgeService.js";
 import type { OrderService } from "../domain/orderService.js";
 import { SYSTEM_PROMPT } from "./prompt.js";
 import { createGetOrderTool } from "./tools/getOrder.js";
+import { createListOrdersTool } from "./tools/listOrders.js";
 import { createRequestCancellationTool } from "./tools/requestCancellation.js";
 import { createSearchKnowledgeTool } from "./tools/searchKnowledge.js";
 
@@ -20,6 +21,7 @@ export interface AgentDeps {
 export function createSupportAgent(deps: AgentDeps, userId: string) {
   const tools = [
     createGetOrderTool(deps.orderService, userId),
+    createListOrdersTool(deps.orderService, userId),
     createSearchKnowledgeTool(deps.knowledgeService),
     createRequestCancellationTool(deps.cancellationService, userId),
   ];

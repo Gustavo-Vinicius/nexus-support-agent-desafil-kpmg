@@ -5,7 +5,7 @@ import {
 } from "../../application/errors.js";
 import type { ChatService } from "../../application/chatService.js";
 import { chatBodySchema } from "../schemas.js";
-import { errorSchema } from "../swagger.js";
+import { errorSchema, orderSchema } from "../swagger.js";
 
 export function registerChatRoutes(app: FastifyInstance, chatService: ChatService) {
   app.post(
@@ -32,10 +32,40 @@ export function registerChatRoutes(app: FastifyInstance, chatService: ChatServic
         response: {
           200: {
             type: "object",
-            required: ["reply", "threadId"],
+            required: ["reply", "threadId", "orders", "citations", "toolCalls"],
             properties: {
               reply: { type: "string" },
               threadId: { type: "string", examples: ["customer-001:s1"] },
+              orders: {
+                type: "array",
+                description:
+                  "Pedidos retornados por get_order / list_orders apenas neste turno",
+                items: orderSchema,
+              },
+              citations: {
+                type: "array",
+                description: "Fontes de search_knowledge usadas neste turno",
+                items: {
+                  type: "object",
+                  required: ["source"],
+                  properties: {
+                    source: { type: "string" },
+                    title: { type: "string" },
+                  },
+                },
+              },
+              toolCalls: {
+                type: "array",
+                description: "Tools invocadas pelo modelo neste turno",
+                items: {
+                  type: "object",
+                  required: ["name"],
+                  properties: {
+                    name: { type: "string" },
+                    args: { type: "object", additionalProperties: true },
+                  },
+                },
+              },
               awaitingConfirmation: {
                 type: "object",
                 properties: {

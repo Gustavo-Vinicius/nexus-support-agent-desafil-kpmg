@@ -3,7 +3,14 @@ import type { BaseMessage } from "@langchain/core/messages";
 import { HumanMessage } from "@langchain/core/messages";
 import type { AgentDeps } from "../agent/graph.js";
 import { createSupportAgent } from "../agent/graph.js";
+import type { Order } from "../domain/types.js";
 import { classifyChatFailure } from "./errors.js";
+import {
+  emptyTurnSideData,
+  extractTurnSideData,
+  type ChatCitation,
+  type ChatToolCall,
+} from "./chatTurn.js";
 
 /** Evita que "s"/"n" isolados casem o início de "só"/"nunca" (ó/ã não são \w em JS). */
 const CONFIRM_YES = /^(sim|yes|confirmo|confirmar)\b|^[sy]$/i;
@@ -18,6 +25,9 @@ export interface ChatInput {
 export interface ChatResult {
   reply: string;
   threadId: string;
+  orders: Order[];
+  citations: ChatCitation[];
+  toolCalls: ChatToolCall[];
   awaitingConfirmation?: {
     orderId: string;
     prompt: string;
@@ -40,6 +50,7 @@ export class ChatService {
           return {
             reply: pending.message,
             threadId,
+            ...emptyTurnSideData(),
             awaitingConfirmation: {
               orderId: pending.orderId,
               prompt: pending.message,
@@ -102,9 +113,11 @@ function toChatResult(threadId: string, state: unknown): ChatResult {
       | undefined;
     const prompt =
       interruptValue?.message ?? "Confirma o cancelamento? Responda sim ou não.";
+    const messages = (state as { messages?: BaseMessage[] }).messages ?? [];
     return {
       reply: prompt,
       threadId,
+      ...extractTurnSideData(messages),
       awaitingConfirmation: {
         orderId: interruptValue?.orderId ?? "unknown",
         prompt,
@@ -117,5 +130,9 @@ function toChatResult(threadId: string, state: unknown): ChatResult {
   const content =
     typeof last?.content === "string" ? last.content : JSON.stringify(last?.content);
 
-  return { reply: content || "Sem resposta do agente.", threadId };
+  return {
+    reply: content || "Sem resposta do agente.",
+    threadId,
+    ...extractTurnSideData(messages),
+  };
 }

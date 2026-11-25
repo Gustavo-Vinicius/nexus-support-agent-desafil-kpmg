@@ -18,4 +18,11 @@ describe("OrderService", () => {
   it("nega pedido de outro cliente sem revelar detalhes", () => {
     expect(() => service.getOwnedOrder("customer-001", "99999")).toThrow(OrderAccessDeniedError);
   });
+
+  it("lista só pedidos do customer autenticado", () => {
+    const mine = service.listMyOrders("customer-001");
+    expect(mine.map((o) => o.id).sort()).toEqual(["12345", "12346"]);
+    expect(service.listMyOrders("customer-002").map((o) => o.id)).toEqual(["99999"]);
+  });
 });
+

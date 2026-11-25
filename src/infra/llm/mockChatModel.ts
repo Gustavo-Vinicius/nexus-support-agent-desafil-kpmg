@@ -79,6 +79,19 @@ export class MockSupportChatModel extends BaseChatModel {
       return toolCall("request_cancellation", { orderId });
     }
 
+    if (/(quantos pedidos|meus pedidos|listar pedidos|liste|quais pedidos)/i.test(lower)) {
+      return toolCall("list_orders", {});
+    }
+
+    // Políticas antes do fallback de orderId no histórico (evita get_order em pergunta de devolução)
+    if (/(pol[ií]tica|devolu[cç][aã]o|eletr[oô]nic|cancelamento|prazo)/i.test(lower)) {
+      return toolCall("search_knowledge", { query: text });
+    }
+
+    if (/(atrasad|o que posso fazer|previs[aã]o de entrega)/i.test(lower)) {
+      return toolCall("search_knowledge", { query: text });
+    }
+
     // Continuidade: "previsão de entrega dele" / "status dele"
     if (
       orderId &&
@@ -89,14 +102,6 @@ export class MockSupportChatModel extends BaseChatModel {
 
     if (orderId) {
       return toolCall("get_order", { orderId });
-    }
-
-    if (/(atrasad|o que posso fazer|previs[aã]o de entrega)/i.test(lower)) {
-      return toolCall("search_knowledge", { query: text });
-    }
-
-    if (/(pol[ií]tica|devolu[cç][aã]o|eletr[oô]nic|cancelamento|prazo)/i.test(lower)) {
-      return toolCall("search_knowledge", { query: text });
     }
 
     return new AIMessage(
@@ -132,6 +137,17 @@ function summarizeTools(toolMessages: BaseMessage[]): AIMessage {
           `Não consegui concluir a operação (${String(parsed.error)}). ` +
             `${String(parsed.message ?? "Serviço indisponível")}. Nenhum dado foi inventado.`,
         );
+      }
+
+      if (typeof parsed.count === "number" && Array.isArray(parsed.orders)) {
+        const orders = parsed.orders as Array<{ id?: string; status?: string }>;
+        if (orders.length === 0) {
+          return new AIMessage("Você não possui pedidos registrados nesta conta.");
+        }
+        const lines = orders
+          .map((o) => `- ${o.id ?? "?"}: status "${o.status ?? "?"}"`)
+          .join("\n");
+        return new AIMessage(`Você tem ${parsed.count} pedido(s):\n${lines}`);
       }
 
       if (typeof parsed.id === "string" && typeof parsed.status === "string") {

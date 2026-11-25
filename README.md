@@ -47,7 +47,7 @@ flowchart TB
   Chat --> CP
   Graph --> Tools
   Graph --> LLM
-  Tools -->|get_order| OS
+  Tools -->|get_order / list_orders| OS
   Tools -->|search_knowledge| KS
   Tools -->|"request_cancellation\ninterrupt → aguarda confirmação"| CS
   OS --> DB
@@ -60,8 +60,8 @@ flowchart TB
 | Camada | Responsabilidade |
 | --- | --- |
 | **API (Fastify)** | Transporte: Zod no body/params, `userId` via Bearer no middleware, status HTTP corretos |
-| **Aplicação (`chatService`)** | Orquestra a conversa: `thread_id = userId:sessionId`, detecta cancelamento pendente, interpreta confirmação de forma determinística, invoca ou retoma o grafo |
-| **Agente (LangGraph)** | System prompt + três tools. Tools só validam args e delegam ao service (ou interrompem para confirmação) |
+| **Aplicação (`chatService`)** | Orquestra a conversa: `thread_id = userId:sessionId`, confirmação determinística, monta `orders`/`citations`/`toolCalls` só com mensagens do turno atual (`getCurrentTurnMessages`) |
+| **Agente (LangGraph)** | System prompt + tools (`get_order`, `list_orders`, `search_knowledge`, `request_cancellation`). Tools só validam args e delegam ao service (ou interrompem para confirmação) |
 | **Domínio** | Regras de negócio: posse, elegibilidade de cancelamento, busca com limiar |
 | **Infra** | JSON em memória, índice BM25, provider LLM, checkpointer |
 
@@ -92,7 +92,7 @@ tests/
 4. **Tools sem lógica** — adapters finos: validam argumentos Zod e chamam o service. Sem regra de negócio na tool.
 5. **Citação de política** — `search_knowledge` devolve `source` + `howToCite`; o system prompt exige `Fonte: <arquivo>` sempre que a resposta se basear em documento.
 6. **Erros sem alucinar** — LLM fora do ar / rate limit → `503` com `error` + `message`; falha de tool → JSON `error` na tool ou `502`; API de pedidos indisponível → `orders_api_unavailable`. Nunca devolve `reply` inventado nesses casos.
-7. **Anti prompt-injection em documentos** — políticas passam por `sanitizePolicyText` (remove “ignore previous instructions”, etc.), são envelopadas em `<<<UNTRUSTED_POLICY_DATA>>>` e o prompt manda tratar só como fatos.
+7. **Anti prompt-injection em documentos** — políticas passam por `sanitizePolicyText` (remove “ignore previous instructions”, etc.), vão em `<<<POLICY_EXCERPT>>>` e o prompt manda **usar os fatos** e **ignorar só instruções** embutidas.
 
 Essas quatro frases respondem à maior parte do que o avaliador costuma procurar.
 
@@ -100,7 +100,7 @@ Essas quatro frases respondem à maior parte do que o avaliador costuma procurar
 
 | Método | Path | Auth | Descrição |
 | --- | --- | --- | --- |
-| `POST` | `/chat` | Bearer | Conversa com o agente |
+| `POST` | `/chat` | Bearer | Conversa; `orders` / `citations` / `toolCalls` só do turno atual |
 | `GET` | `/orders/:id` | Bearer | Consulta pedido (só do dono) |
 | `POST` | `/orders/:id/cancellation-request` | Bearer | Cancelamento direto (sem LLM) |
 | `GET` | `/health` | — | Healthcheck (público) |
