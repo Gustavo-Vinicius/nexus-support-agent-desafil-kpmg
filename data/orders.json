@@ -1,0 +1,29 @@
+[
+  {
+    "id": "12345",
+    "customerId": "customer-001",
+    "status": "delayed",
+    "estimatedDelivery": "2026-11-25",
+    "total": 299.9,
+    "canCancel": true,
+    "items": [{ "sku": "SKU-ELEC-01", "name": "Fone Bluetooth", "qty": 1 }]
+  },
+  {
+    "id": "12346",
+    "customerId": "customer-001",
+    "status": "delivered",
+    "estimatedDelivery": "2026-02-15",
+    "total": 199.8,
+    "canCancel": false,
+    "items": [{ "sku": "SKU-ELEC-02", "name": "Mouse sem fio", "qty": 2 }]
+  },
+  {
+    "id": "99999",
+    "customerId": "customer-002",
+    "status": "processing",
+    "estimatedDelivery": "2026-12-01",
+    "total": 459.0,
+    "canCancel": true,
+    "items": [{ "sku": "SKU-ELEC-03", "name": "Teclado mecânico", "qty": 1 }]
+  }
+]

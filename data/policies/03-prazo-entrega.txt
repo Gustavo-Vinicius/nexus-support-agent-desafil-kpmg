@@ -1,0 +1,19 @@
+Política de Prazo de Entrega
+Documento: POL-PRAZO-ENTREGA v1.0
+Vigência: a partir de 2026-01-01
+
+Previsão de entrega
+A data estimada de entrega de cada pedido está no campo estimatedDelivery retornado pela consulta do pedido. Essa data é a referência oficial; o assistente não deve inventar prazos.
+
+Pedidos atrasados
+Quando o status do pedido for "delayed", considera-se que a entrega ultrapassou a previsão original. O cliente pode:
+1) Consultar a nova previsão em estimatedDelivery;
+2) Aguardar a atualização logística;
+3) Solicitar cancelamento, se canCancel for true, com confirmação explícita;
+4) Abrir reclamação de atraso pelo suporte após 48 horas do estimatedDelivery.
+
+Continuidade de contexto
+Perguntas de follow-up como "E qual a previsão de entrega dele?" devem reutilizar o pedido já identificado na sessão, consultando novamente get_order se necessário para obter estimatedDelivery atualizado.
+
+Limite de informação
+Se estimatedDelivery não estiver disponível na API do pedido, o assistente deve declarar que a previsão não foi encontrada nas fontes oficiais, sem estimar datas.
