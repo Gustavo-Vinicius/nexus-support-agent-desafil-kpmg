@@ -122,13 +122,12 @@ Definidos em `AUTH_TOKENS` (veja `.env.example`):
 
 ### Massa de pedidos (`data/orders.json`)
 
-Alinhada ao enunciado:
+Fixtures expandidas (resumo; ver JSON completo):
 
-| id | customerId | status | estimatedDelivery | canCancel |
-| --- | --- | --- | --- | --- |
-| `12345` | customer-001 | delayed | 2026-11-25 | true |
-| `12346` | customer-001 | delivered | 2026-02-15 | false |
-| `99999` | customer-002 | processing | 2026-12-01 | true |
+| customerId | qtd | exemplos |
+| --- | --- | --- |
+| `customer-001` | 9 | `12345` delayed, `12346` delivered, … |
+| `customer-002` | 8 | `99999` processing, `22223` delayed, … |
 
 ### Políticas (`data/policies/`)
 
