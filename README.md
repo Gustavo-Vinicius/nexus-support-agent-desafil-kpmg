@@ -2,6 +2,9 @@
 
 Agente de suporte HTTP com **Fastify + LangGraph**, organizado como monólito modular em camadas (ports & adapters leve). Escopo pensado para um take-home de 8–12h: sem microsserviços, filas ou Clean Architecture completa.
 
+<img width="1466" height="826" alt="image" src="https://github.com/user-attachments/assets/209bd284-3704-4ab9-8483-6f4a6e2539d5" />
+
+
 ## Princípio
 
 **O LLM decide, mas não autoriza.** O agente escolhe qual tool chamar e redige a resposta. Identidade, posse do pedido e confirmação de cancelamento ficam no código determinístico — camadas que o modelo não alcança. É isso que torna o sistema resistente a injeção de prompt.
