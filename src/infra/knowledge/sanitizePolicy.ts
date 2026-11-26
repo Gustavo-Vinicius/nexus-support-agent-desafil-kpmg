@@ -1,7 +1,6 @@
 /**
  * Hardening contra injeção de prompt em documentos de política.
- * Políticas são dados não confiáveis: neutraliza padrões de instrução e
- * envelopa o texto em delimitadores explícitos para o LLM.
+ * Remove padrões de instrução; o envelope POLICY_EXCERPT é opcional (a tool decide).
  */
 
 const INJECTION_PATTERNS: RegExp[] = [
@@ -23,8 +22,12 @@ const INJECTION_PATTERNS: RegExp[] = [
   /\bcancele\s+todos\s+os\s+pedidos\b/gi,
 ];
 
-export const UNTRUSTED_START = "<<<UNTRUSTED_POLICY_DATA>>>";
-export const UNTRUSTED_END = "<<<END_UNTRUSTED_POLICY_DATA>>>";
+export const POLICY_EXCERPT_START = "<<<POLICY_EXCERPT>>>";
+export const POLICY_EXCERPT_END = "<<<END_POLICY_EXCERPT>>>";
+
+/** Aliases legados. */
+export const UNTRUSTED_START = POLICY_EXCERPT_START;
+export const UNTRUSTED_END = POLICY_EXCERPT_END;
 
 export interface SanitizedPolicyText {
   text: string;
@@ -32,28 +35,45 @@ export interface SanitizedPolicyText {
   untrusted: true;
 }
 
-/** Remove/neutraliza padrões típicos de prompt injection e envelopa como dado. */
-export function sanitizePolicyText(raw: string): SanitizedPolicyText {
+export function unwrapIfNeeded(text: string): string {
+  return text
+    .replaceAll(POLICY_EXCERPT_START, "")
+    .replaceAll(POLICY_EXCERPT_END, "")
+    .replaceAll("<<<UNTRUSTED_POLICY_DATA>>>", "")
+    .replaceAll("<<<END_UNTRUSTED_POLICY_DATA>>>", "")
+    .trim();
+}
+
+/** Remove padrões de injeção; mantém o texto factual legível para o LLM. */
+export function stripPolicyInjections(raw: string): SanitizedPolicyText {
   let stripped = 0;
-  let cleaned = raw;
+  let cleaned = unwrapIfNeeded(raw);
 
   for (const pattern of INJECTION_PATTERNS) {
+    pattern.lastIndex = 0;
     const before = cleaned;
     cleaned = cleaned.replace(pattern, "[INSTRUCAO_NAO_CONFIAVEL_REMOVIDA]");
     if (cleaned !== before) stripped += 1;
   }
 
-  // Evita que delimitadores no documento quebrem o envelope
   cleaned = cleaned
-    .replaceAll(UNTRUSTED_START, "[DELIMITADOR_REMOVIDO]")
-    .replaceAll(UNTRUSTED_END, "[DELIMITADOR_REMOVIDO]");
-
-  const wrapped = `${UNTRUSTED_START}\n${cleaned.trim()}\n${UNTRUSTED_END}`;
+    .replaceAll(POLICY_EXCERPT_START, "[DELIMITADOR_REMOVIDO]")
+    .replaceAll(POLICY_EXCERPT_END, "[DELIMITADOR_REMOVIDO]");
 
   return {
-    text: wrapped,
+    text: cleaned.trim(),
     strippedInjectionAttempts: stripped,
     untrusted: true,
+  };
+}
+
+/** @deprecated Prefer stripPolicyInjections + metadata na tool. Mantido para testes. */
+export function sanitizePolicyText(raw: string, options?: { wrap?: boolean }): SanitizedPolicyText {
+  const stripped = stripPolicyInjections(raw);
+  if (options?.wrap === false) return stripped;
+  return {
+    ...stripped,
+    text: `${POLICY_EXCERPT_START}\n${stripped.text}\n${POLICY_EXCERPT_END}`,
   };
 }
 

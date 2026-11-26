@@ -61,7 +61,16 @@ export const orderSchema = {
     customerId: { type: "string", examples: ["customer-001"] },
     status: {
       type: "string",
-      enum: ["processing", "shipped", "delayed", "delivered", "cancelled"],
+      enum: [
+        "processing",
+        "shipped",
+        "delayed",
+        "delivered",
+        "cancelled",
+        "canceled",
+        "returned",
+        "pending_payment",
+      ],
     },
     estimatedDelivery: { type: "string", examples: ["2026-11-25"] },
     total: { type: "number", examples: [299.9] },

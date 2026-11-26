@@ -1,7 +1,8 @@
 import type { PolicyIndex } from "../infra/knowledge/policyIndex.js";
 import type { KnowledgeChunk } from "./types.js";
 
-const DEFAULT_THRESHOLD = 0.35;
+/** Limiar baixo: docs inteiros diluem BM25; 0.15 ainda filtra ruido quase-zero. */
+const DEFAULT_THRESHOLD = 0.15;
 
 export class KnowledgeService {
   constructor(

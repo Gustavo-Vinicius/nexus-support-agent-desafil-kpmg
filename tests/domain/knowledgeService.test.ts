@@ -10,18 +10,20 @@ describe("KnowledgeService + políticas em arquivo", () => {
   const index = createBm25PolicyIndex();
   const service = new KnowledgeService(index, 0.15);
 
-  it("carrega as 3 políticas a partir de TXT/Markdown", () => {
+  it("carrega as 3 políticas a partir de TXT/Markdown (1 doc por arquivo)", () => {
     const docs = loadPolicyDocuments(resolve(process.cwd(), "data/policies"));
+    expect(docs).toHaveLength(3);
     const sources = new Set(docs.map((d) => d.source));
     expect(sources.has("01-devolucao-eletronicos.md")).toBe(true);
     expect(sources.has("02-cancelamento.md")).toBe(true);
     expect(sources.has("03-prazo-entrega.txt")).toBe(true);
   });
 
-  it("responde devolução de eletrônicos com fonte do arquivo", () => {
+  it("responde devolução de eletrônicos com fonte e conteúdo útil", () => {
     const chunks = service.search("política de devolução de eletrônicos");
     expect(chunks.length).toBeGreaterThan(0);
     expect(chunks[0]?.source).toBe("01-devolucao-eletronicos.md");
+    expect(chunks[0]?.text).toMatch(/7 dias/i);
   });
 
   it("responde sobre cancelamento com fonte do arquivo", () => {

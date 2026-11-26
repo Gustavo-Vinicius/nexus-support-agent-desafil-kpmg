@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, extname, resolve } from "node:path";
 import type { KnowledgeChunk } from "../../domain/types.js";
-import { sanitizePolicyText } from "./sanitizePolicy.js";
+import { stripPolicyInjections } from "./sanitizePolicy.js";
 
 interface PolicyDoc {
   id: string;
@@ -17,8 +17,8 @@ export interface PolicyIndex {
 const SUPPORTED_EXTENSIONS = new Set([".md", ".txt", ".markdown"]);
 
 /**
- * Índice lexical simples (BM25-lite) sobre arquivos TXT/Markdown em data/policies.
- * Suficiente para o take-home; trocável por embeddings.
+ * Índice lexical (BM25-lite): 1 documento = 1 arquivo de política.
+ * Evita o bug de devolver só o cabeçalho do Markdown sem o corpo útil.
  */
 export function createBm25PolicyIndex(
   policiesDir = resolve(process.cwd(), "data/policies"),
@@ -48,7 +48,7 @@ export function createBm25PolicyIndex(
             terms.reduce((acc, term) => {
               const tfBody = bodyTokens.filter((t) => t === term).length;
               const tfTitle = titleTokens.filter((t) => t === term).length;
-              const tf = tfBody + tfTitle * 3;
+              const tf = tfBody + tfTitle * 2;
               if (tf === 0) return acc;
               const docFreq = df.get(term) ?? 0;
               const idf = Math.log(1 + (n - docFreq + 0.5) / (docFreq + 0.5));
@@ -75,85 +75,37 @@ export function loadPolicyDocuments(policiesDir: string): PolicyDoc[] {
     .filter((name) => SUPPORTED_EXTENSIONS.has(extname(name).toLowerCase()))
     .sort();
 
-  const docs: PolicyDoc[] = [];
-
-  for (const file of files) {
+  return files.map((file) => {
     const fullPath = resolve(policiesDir, file);
     const raw = readFileSync(fullPath, "utf-8");
     const source = basename(file);
-    const chunks = chunkDocument(raw, source);
-    docs.push(...chunks);
-  }
+    const title = extractTitle(raw) || titleFromFilename(source);
+    const body = stripMarkdown(raw);
+    const sanitized = stripPolicyInjections(body);
 
-  return docs;
-}
-
-/** Quebra MD por headings ##/# e TXT por blocos separados por linha em branco. */
-function chunkDocument(raw: string, source: string): PolicyDoc[] {
-  const normalized = raw.replace(/\r\n/g, "\n").trim();
-  if (!normalized) return [];
-
-  const isMarkdown = /\.md$|\.markdown$/i.test(source);
-  const parts = isMarkdown ? splitMarkdownSections(normalized) : splitParagraphs(normalized);
-  const fallbackTitle = titleFromFilename(source);
-
-  return parts.map((part, index) => {
-    const sanitized = sanitizePolicyText(part.body);
     return {
-      id: `${source}#${index + 1}`,
-      title: part.title || fallbackTitle,
+      id: source,
+      title,
       source,
       text: sanitized.text,
     };
   });
 }
 
-function splitMarkdownSections(text: string): Array<{ title: string; body: string }> {
-  const lines = text.split("\n");
-  const sections: Array<{ title: string; body: string }> = [];
-  let title = "";
-  let body: string[] = [];
-
-  const flush = () => {
-    const joined = body.join("\n").trim();
-    if (joined) sections.push({ title: title || "Introdução", body: stripMarkdown(joined) });
-    body = [];
-  };
-
-  for (const line of lines) {
-    const heading = /^(#{1,3})\s+(.+)$/.exec(line);
-    if (heading) {
-      flush();
-      title = heading[2]!.trim();
-      continue;
-    }
-    body.push(line);
-  }
-  flush();
-  return sections;
-}
-
-function splitParagraphs(text: string): Array<{ title: string; body: string }> {
-  const blocks = text
-    .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter(Boolean);
-
-  if (blocks.length === 0) return [];
-
-  const docTitle = blocks[0]!.split("\n")[0]!.trim();
-  return blocks.map((block, index) => ({
-    title: index === 0 ? docTitle : `${docTitle} — trecho ${index + 1}`,
-    body: block,
-  }));
+function extractTitle(raw: string): string | undefined {
+  const heading = /^(#{1,3})\s+(.+)$/m.exec(raw);
+  if (heading?.[2]) return heading[2].trim();
+  const firstLine = raw.split(/\r?\n/).find((l) => l.trim().length > 0);
+  return firstLine?.trim();
 }
 
 function stripMarkdown(text: string): string {
   return text
+    .replace(/\r\n/g, "\n")
+    .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/^\s*[-*]\s+/gm, "")
-    .replace(/^\s*\d+\)\s+/gm, "")
     .trim();
 }
 

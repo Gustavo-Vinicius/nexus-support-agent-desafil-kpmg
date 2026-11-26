@@ -4,7 +4,10 @@ export type OrderStatus =
   | "shipped"
   | "delayed"
   | "delivered"
-  | "cancelled";
+  | "cancelled"
+  | "canceled"
+  | "returned"
+  | "pending_payment";
 
 export interface OrderItem {
   sku: string;
